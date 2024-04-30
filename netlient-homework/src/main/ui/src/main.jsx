@@ -1,10 +1,25 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
+import HomePage from './pages/HomePage.jsx'
 import './index.css'
+import {createBrowserRouter, RouterProvider} from "react-router-dom";
+import DataListPage from "./pages/DataListPage.jsx";
+import 'bootstrap/dist/css/bootstrap.min.css';
+const router = createBrowserRouter([
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+    {
+        path: "/",
+        element: <HomePage/>,
+    },
+    {
+        path: "/data",
+        element: <DataListPage/>
+    }
+])
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+    <React.StrictMode>
+        <RouterProvider router={router}/>
+    </React.StrictMode>,
 )
