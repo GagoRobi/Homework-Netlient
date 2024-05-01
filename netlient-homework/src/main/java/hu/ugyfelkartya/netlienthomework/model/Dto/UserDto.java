@@ -1,5 +1,5 @@
 package hu.ugyfelkartya.netlienthomework.model.Dto;
 
-public record UserDto(String email, String password){}
+public record UserDto(String username, String password){}
 
 

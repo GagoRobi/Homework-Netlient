@@ -13,13 +13,17 @@ import java.util.NoSuchElementException;
 public class UserService {
     private final UserRepository userRepository;
 
-    public User authenticateUser(String email, String password){
-        return userRepository.findByEmailAndPassword(email, password).orElseThrow(NoSuchElementException::new);
+//    public User DEPRECATEDauthenticateUser(String email, String password){
+//        return userRepository.findByUsernameAndPassword(email, password).orElseThrow(NoSuchElementException::new);
+//    }
+    public boolean authenticateUser(UserDto userDto){
+        return userRepository.existsByUsernameAndPassword(userDto.username(), userDto.password());
     }
+
 
     public User register(UserDto userDto) {
         return userRepository.save(User.builder()
-                .email(userDto.email())
+                .username(userDto.username())
                 .password(userDto.password())
                 .build());
     }

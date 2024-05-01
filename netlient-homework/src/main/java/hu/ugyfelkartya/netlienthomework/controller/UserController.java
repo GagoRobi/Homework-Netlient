@@ -14,9 +14,13 @@ public class UserController {
         this.service = service;
     }
 
-    @GetMapping
-    public User authenticate(@RequestParam String email, @RequestParam String password){
-        return service.authenticateUser(email, password);
+//    @GetMapping
+//    public User authenticate(@RequestParam String username, @RequestParam String password){
+//        return service.DEPRECATEDauthenticateUser(username, password);
+//    }
+    @PostMapping("/auth")
+    public boolean authenticate(@RequestBody UserDto userDto){
+        return service.authenticateUser(userDto);
     }
 
     @PostMapping

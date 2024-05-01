@@ -1,4 +1,5 @@
 INSERT INTO adat (id, name, price, vat) VALUES
+                                            (101, 'Zabkorpa', 240, 124.8),
                                             (102, 'Zabpehely', 217.8, 112.2),
                                             (103, 'Tejföl', 150.5, 78.1),
                                             (104, 'Sonka', 380.0, 197.6),

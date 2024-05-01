@@ -1,10 +1,10 @@
 package hu.ugyfelkartya.netlienthomework.controller;
 
 import hu.ugyfelkartya.netlienthomework.model.Adat;
-import hu.ugyfelkartya.netlienthomework.repository.AdatRepository;
 import hu.ugyfelkartya.netlienthomework.service.AdatService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,8 +20,20 @@ public class AdatCotroller {
     }
 
     @GetMapping
-    public Page<Adat> findAll(@RequestParam int page, @RequestParam int size){
+    public Page<Adat> findAllPageable(@RequestParam int page, @RequestParam int size){
         PageRequest pageRequest= PageRequest.of(page, size);
+        return adatService.findAll(pageRequest);
+    }
+    @GetMapping("/sorted")
+    public Page<Adat> findAllPageableSorted(@RequestParam int page, @RequestParam int size,
+                                            @RequestParam boolean asc, @RequestParam String category){
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(category));
+        if(asc){
+            pageRequest = PageRequest.of(page, size, Sort.by(category).ascending());
+        } else{
+            pageRequest = PageRequest.of(page, size, Sort.by(category).descending());
+
+        }
         return adatService.findAll(pageRequest);
     }
 }
