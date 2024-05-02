@@ -7,9 +7,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class AdatService {
@@ -18,4 +15,11 @@ public class AdatService {
     public Page<Adat> findAll(PageRequest pageRequest){
         return adatRepository.findAll(pageRequest);
     }
+
+    public Page<Adat> findAllByNameContaining(String searchText, PageRequest pageRequest){
+        return adatRepository.findAllByNameContainingIgnoreCase(searchText,pageRequest);
+    }
+
+
+
 }

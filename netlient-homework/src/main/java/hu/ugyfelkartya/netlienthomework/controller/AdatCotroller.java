@@ -20,20 +20,42 @@ public class AdatCotroller {
     }
 
     @GetMapping
-    public Page<Adat> findAllPageable(@RequestParam int page, @RequestParam int size){
-        PageRequest pageRequest= PageRequest.of(page, size);
+    public Page<Adat> findAllPageable(@RequestParam int page, @RequestParam int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
         return adatService.findAll(pageRequest);
     }
+
     @GetMapping("/sorted")
     public Page<Adat> findAllPageableSorted(@RequestParam int page, @RequestParam int size,
-                                            @RequestParam boolean asc, @RequestParam String category){
+                                            @RequestParam boolean asc, @RequestParam String category) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(category));
-        if(asc){
+        if (asc) {
             pageRequest = PageRequest.of(page, size, Sort.by(category).ascending());
-        } else{
+        } else {
             pageRequest = PageRequest.of(page, size, Sort.by(category).descending());
 
         }
         return adatService.findAll(pageRequest);
     }
+
+    @GetMapping("/search")
+    public Page<Adat> findPageableFilteredBySearch(@RequestParam int page, @RequestParam int size, @RequestParam String namePart) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        return adatService.findAllByNameContaining(namePart, pageRequest);
+    }
+
+    @GetMapping("/search-sorted")
+    public Page<Adat> findPageableFilteredBySearchSorted(@RequestParam int page, @RequestParam int size,
+                                            @RequestParam boolean asc, @RequestParam String category, String namePart) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(category).ascending());
+        if (asc) {
+            pageRequest = PageRequest.of(page, size, Sort.by(category).ascending());
+        } else {
+            pageRequest = PageRequest.of(page, size, Sort.by(category).descending());
+
+        }
+        return adatService.findAllByNameContaining(namePart, pageRequest);
+    }
+
+
 }
