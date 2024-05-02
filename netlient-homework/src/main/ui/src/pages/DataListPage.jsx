@@ -13,6 +13,8 @@ export default function DataListPage() {
     const [sorted, setSorted] = useState(false);
     const [asc, setAsc] = useState(false);
     const [lastCategory, setLastCategory] = useState(null);
+    const [searchInput, setSearchInput] = useState("");
+    const [filtered, setFiltered] = useState(false);
 
 
     async function fetchDataList() {
@@ -26,6 +28,22 @@ export default function DataListPage() {
 
     async function fetchSortedDataList(columnName) {
         const response = await fetch(`api/adat/sorted?page=${pageNumber}&size=${recordPerPage}&asc=${asc}&category=${columnName}`);
+        const dataArray = await response.json();
+        setDataList(dataArray.content);
+        return dataArray
+    }
+
+    async function fetchFilteredDataList() {
+        const response = await fetch(`api/adat/search?page=${pageNumber}&size=${recordPerPage}&namePart=${searchInput}`);
+        const dataArray = await response.json();
+        setDataList(dataArray.content);
+        setDatabaseSize(dataArray.totalElements);
+        setMaxPages(dataArray.totalPages)
+        return dataArray
+    }
+
+    async function fetchFilteredSortedDataList(columnName) {
+        const response = await fetch(`api/adat/search-sorted?page=${pageNumber}&size=${recordPerPage}&asc=${asc}&category=${columnName}&namePart=${searchInput}`);
         const dataArray = await response.json();
         setDataList(dataArray.content);
         return dataArray
@@ -50,20 +68,53 @@ export default function DataListPage() {
     }
 
     useEffect(() => {
-        if (!sorted) {
-            fetchDataList()
+        if (!filtered) {
+            if (!sorted) {
+                fetchDataList();
+            }else{
+                fetchSortedDataList(lastCategory);
+            }
+        }else{
+            if (sorted) {
+                fetchFilteredSortedDataList(lastCategory)
+            } else {
+                fetchFilteredDataList()
+            }
         }
         createPagination()
     }, [pageNumber, recordPerPage])
+
     useEffect(() => {
-        if (sorted) {
-            fetchSortedDataList(lastCategory);
+        if(!filtered){
+            if (sorted) {
+                fetchSortedDataList(lastCategory);
+            }
+        }else{
+            if (sorted) {
+                fetchFilteredSortedDataList(lastCategory)
+            } else {
+                fetchFilteredDataList()
+            }
         }
-    }, [pageNumber, asc, lastCategory]);
+    }, [asc, lastCategory]);
 
     useEffect(() => {
         createPagination()
     }, [maxPages])
+
+    useEffect(() => {
+        setPageNumber(0)
+        if(searchInput.length < 1){
+            setFiltered(false);
+        }else{
+            setFiltered(true);
+        }
+        if (sorted) {
+            fetchFilteredSortedDataList(lastCategory)
+        } else {
+            fetchFilteredDataList()
+        }
+    }, [searchInput])
 
     function handleSizeSelect(e) {
         setPageNumber(0);
@@ -91,14 +142,15 @@ export default function DataListPage() {
                         <option value="all">Összes Elem</option>
                     </Form.Select>
                 </Form>
-                <Form style={{marginLeft:"10px"}}>
+                <Form style={{marginLeft: "10px"}}>
                     <Form.Group className="mb-3" controlId="search-input">
                         <FloatingLabel
                             controlId="floating-search"
                             label="Keresés"
                             className="mb-3"
                         >
-                            <Form.Control type="text" placeholder="Keresés"/>
+                            <Form.Control onChange={(e) => setSearchInput(e.target.value)} type="text"
+                                          placeholder="Keresés"/>
                         </FloatingLabel>
                     </Form.Group>
                 </Form>
@@ -114,13 +166,16 @@ export default function DataListPage() {
                             </th>
                             <th onClick={() => {
                                 sortTable("name")
-                            }} id="name">Cikk Megnevezése</th>
+                            }} id="name">Cikk Megnevezése
+                            </th>
                             <th id="price" onClick={() => {
                                 sortTable("price")
-                            }}>Nettó Ár</th>
+                            }}>Nettó Ár
+                            </th>
                             <th onClick={() => {
                                 sortTable("vat")
-                            }} id="vat">Áfa</th>
+                            }} id="vat">Áfa
+                            </th>
                         </tr>
                         </thead>
                         <tbody>
