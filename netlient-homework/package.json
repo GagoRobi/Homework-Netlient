@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "jspdf": "^2.5.1",
+    "pdfmake": "^0.2.10"
+  }
+}

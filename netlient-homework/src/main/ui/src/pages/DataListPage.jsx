@@ -2,6 +2,12 @@ import {Button, FloatingLabel, Form, FormGroup, Navbar, Pagination, Table} from 
 import {Link} from "react-router-dom";
 import {useEffect, useState} from "react";
 import PageNavigation from "../components/PageNavigation.jsx";
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+import Highlighter from "react-highlight-words";
+
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
 
 export default function DataListPage() {
     const [pageNumber, setPageNumber] = useState(0);
@@ -9,20 +15,83 @@ export default function DataListPage() {
     const [dataList, setDataList] = useState([]);
     const [maxPages, setMaxPages] = useState(0);
     const [paginationItems, setPaginationItems] = useState([]);
-    const [databaseSize, setDatabaseSize] = useState(0);
     const [sorted, setSorted] = useState(false);
     const [asc, setAsc] = useState(false);
     const [lastCategory, setLastCategory] = useState(null);
     const [searchInput, setSearchInput] = useState("");
     const [filtered, setFiltered] = useState(false);
+    const [arrayToPrint, setArrayToPrint] = useState([
+        [
+        {text: 'Cikkszám', style: 'tableHeader'},
+        {text: 'Cikk Megnevezése', style: 'tableHeader'},
+        {text: 'Nettó Ár', style: 'tableHeader'},
+        {text: 'Áfa', style: 'tableHeader'}
+    ]
+    ]);
+    const [totalElements, setTotalElements] = useState(0);
+    const [loadedElements, setLoadedElements] = useState(0);
+    const [lastUrl, setLastUrl] = useState(null);
+
+
+
+
+    const generateAndDownloadPDF = async () => {
+        const printBody = await printAllPagesOfResults();
+        const docDefinition = {
+            content: [
+                {text: 'Találatok PDF-be convertálva', style: 'header'},
+                {
+                    style: 'table',
+                    table: {
+                        body: printBody
+                    }
+                },
+            ],
+            styles: {
+                header: {
+                    fontSize: 18,
+                    bold: true,
+                    margin: [0, 0, 0, 10]
+                },
+                table: {
+                    margin: 5
+                },
+                tableHeader: {
+                    bold: true,
+                    fontSize: 13,
+                    color: 'black'
+                }
+            }
+        };
+        console.log(printBody)
+        console.log(docDefinition.content)
+        pdfMake.createPdf(docDefinition).download("results.pdf");
+    };
+
+    const printAllPagesOfResults = async () => {
+        const response = await fetch(`${lastUrl}`);
+        const dataPage = await response.json();
+        const tableContent = await dataPage.content
+        const array = tableContent.map((elem) => [{text : elem.id}, {text: elem.name}, {text: elem.price}, {text: elem.vat}]);
+        console.log([...arrayToPrint,array])
+        return [
+            [{text: 'Cikkszám', style: 'tableHeader'},
+            {text: 'Cikk Megnevezése', style: 'tableHeader'},
+            {text: 'Nettó Ár', style: 'tableHeader'},
+            {text: 'Áfa', style: 'tableHeader'}]
+        ,...array];
+    };
 
 
     async function fetchDataList() {
         const response = await fetch(`api/adat?page=${pageNumber}&size=${recordPerPage}`);
         const dataArray = await response.json();
+        console.log(dataArray)
         setDataList(dataArray.content);
-        setDatabaseSize(dataArray.totalElements);
-        setMaxPages(dataArray.totalPages)
+        setMaxPages(dataArray.totalPages);
+        setTotalElements(dataArray.totalElements);
+        setLoadedElements(dataArray.numberOfElements);
+        setLastUrl(`api/adat?page=0&size=${dataArray.totalElements}`)
         return dataArray
     }
 
@@ -30,6 +99,10 @@ export default function DataListPage() {
         const response = await fetch(`api/adat/sorted?page=${pageNumber}&size=${recordPerPage}&asc=${asc}&category=${columnName}`);
         const dataArray = await response.json();
         setDataList(dataArray.content);
+        setTotalElements(dataArray.totalElements);
+        setLoadedElements(dataArray.numberOfElements);
+        setLastUrl(`api/adat/sorted?page=0&size=${dataArray.totalElements}&asc=${asc}&category=${columnName}`)
+        console.log(dataArray)
         return dataArray
     }
 
@@ -37,7 +110,10 @@ export default function DataListPage() {
         const response = await fetch(`api/adat/search?page=${pageNumber}&size=${recordPerPage}&namePart=${searchInput}`);
         const dataArray = await response.json();
         setDataList(dataArray.content);
-        setDatabaseSize(dataArray.totalElements);
+        setTotalElements(dataArray.totalElements);
+        setLoadedElements(dataArray.numberOfElements);
+        setLastUrl(`api/adat/search?page=0&size=${dataArray.totalElements}&namePart=${searchInput}`)
+        console.log(dataArray)
         setMaxPages(dataArray.totalPages)
         return dataArray
     }
@@ -45,6 +121,10 @@ export default function DataListPage() {
     async function fetchFilteredSortedDataList(columnName) {
         const response = await fetch(`api/adat/search-sorted?page=${pageNumber}&size=${recordPerPage}&asc=${asc}&category=${columnName}&namePart=${searchInput}`);
         const dataArray = await response.json();
+        setTotalElements(dataArray.totalElements);
+        setLoadedElements(dataArray.numberOfElements);
+        setLastUrl(`api/adat/search-sorted?page=0&size=${dataArray.totalElements}&asc=${asc}&category=${columnName}&namePart=${searchInput}`)
+        console.log(dataArray)
         setDataList(dataArray.content);
         return dataArray
     }
@@ -71,10 +151,10 @@ export default function DataListPage() {
         if (!filtered) {
             if (!sorted) {
                 fetchDataList();
-            }else{
+            } else {
                 fetchSortedDataList(lastCategory);
             }
-        }else{
+        } else {
             if (sorted) {
                 fetchFilteredSortedDataList(lastCategory)
             } else {
@@ -85,11 +165,11 @@ export default function DataListPage() {
     }, [pageNumber, recordPerPage])
 
     useEffect(() => {
-        if(!filtered){
+        if (!filtered) {
             if (sorted) {
                 fetchSortedDataList(lastCategory);
             }
-        }else{
+        } else {
             if (sorted) {
                 fetchFilteredSortedDataList(lastCategory)
             } else {
@@ -104,14 +184,15 @@ export default function DataListPage() {
 
     useEffect(() => {
         setPageNumber(0)
-        if(searchInput.length < 1){
+        if (searchInput.length < 1) {
             setFiltered(false);
-        }else{
+        } else {
             setFiltered(true);
         }
         if (sorted) {
             fetchFilteredSortedDataList(lastCategory)
         } else {
+            console.log("asd1")
             fetchFilteredDataList()
         }
     }, [searchInput])
@@ -120,12 +201,17 @@ export default function DataListPage() {
         setPageNumber(0);
         const selectedValue = e.target.value;
         if (selectedValue === "all") {
-            setRecordPerPage(databaseSize);
+            setRecordPerPage(totalElements);
         } else {
             setRecordPerPage(parseInt(selectedValue));
         }
         setSorted(false);
     }
+
+    useEffect(() => {
+
+    }, [dataList])
+
 
     return (
         <>
@@ -180,12 +266,23 @@ export default function DataListPage() {
                         </thead>
                         <tbody>
                         {dataList?.map((record) => (
+
                             <tr key={record.id}>
                                 <td>{record.id}</td>
-                                <td>{record.name}</td>
+
+                                <td><Highlighter
+                                    highlightClassName="YourHighlightClass"
+                                    searchWords={[`${searchInput}`]}
+                                    caseSensitive={false}
+                                    autoEscape={true}
+                                    textToHighlight={`${record.name}`}
+                                /></td>
                                 <td>{record.price}</td>
                                 <td>{record.vat}</td>
-                            </tr>))}
+
+                            </tr>
+
+                        ))}
                         </tbody>
                     </Table>
                     <PageNavigation
@@ -196,7 +293,8 @@ export default function DataListPage() {
                 <>LOADING...</>
 
             }
-
+            <Button onClick={generateAndDownloadPDF}>Download NEW PDF</Button>
+            <Button onClick={generateAndDownloadPDF}>Download PDF</Button>
             <Link to={"/"}><Button>Log out</Button></Link>
         </>
     )
