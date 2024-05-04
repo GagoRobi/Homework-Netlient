@@ -5,8 +5,8 @@ import './index.css'
 import {createBrowserRouter, RouterProvider} from "react-router-dom";
 import DataListPage from "./pages/DataListPage.jsx";
 import 'bootstrap/dist/css/bootstrap.min.css';
-const router = createBrowserRouter([
 
+const router = createBrowserRouter([
     {
         path: "/",
         element: <HomePage/>,

@@ -1,7 +1,7 @@
 package hu.ugyfelkartya.netlienthomework.controller;
 
 import hu.ugyfelkartya.netlienthomework.model.Dto.UserDto;
-import hu.ugyfelkartya.netlienthomework.model.User;
+import hu.ugyfelkartya.netlienthomework.model.entity.User;
 import hu.ugyfelkartya.netlienthomework.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +23,7 @@ public class UserController {
         return service.authenticateUser(userDto);
     }
 
-    @PostMapping
+    @PostMapping("/register")
     public User register(@RequestBody UserDto userDto){
         return service.register(userDto);
     }

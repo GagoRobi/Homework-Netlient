@@ -1,42 +1,41 @@
-import {Button, FloatingLabel, Form, FormGroup, Navbar, Pagination, Table} from "react-bootstrap";
+import {Button, Card, Navbar, Pagination} from "react-bootstrap";
 import {Link} from "react-router-dom";
 import {useEffect, useState} from "react";
+import {
+    fetchDataList,
+    fetchFilteredDataList,
+    fetchFilteredSortedDataList,
+    fetchSortedDataList
+} from '../api/apiService';
 import PageNavigation from "../components/PageNavigation.jsx";
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
-import Highlighter from "react-highlight-words";
+import PaginationSizeSelect from "../components/PaginationSizeSelect.jsx";
+import SearchInputField from "../components/SearchInputField.jsx";
+import DataBaseTable from "../components/DataBaseTable.jsx";
 
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 
 export default function DataListPage() {
-    const [pageNumber, setPageNumber] = useState(0);
+    const [currentPageNumber, setCurrentPageNumber] = useState(0);
     const [recordPerPage, setRecordPerPage] = useState(25);
     const [dataList, setDataList] = useState([]);
-    const [maxPages, setMaxPages] = useState(0);
+    const [numberOfTotalPages, setNumberOfTotalPages] = useState(0);
     const [paginationItems, setPaginationItems] = useState([]);
     const [sorted, setSorted] = useState(false);
     const [asc, setAsc] = useState(false);
     const [lastCategory, setLastCategory] = useState(null);
     const [searchInput, setSearchInput] = useState("");
     const [filtered, setFiltered] = useState(false);
-    const [arrayToPrint, setArrayToPrint] = useState([
-        [
-        {text: 'Cikkszám', style: 'tableHeader'},
-        {text: 'Cikk Megnevezése', style: 'tableHeader'},
-        {text: 'Nettó Ár', style: 'tableHeader'},
-        {text: 'Áfa', style: 'tableHeader'}
-    ]
-    ]);
     const [totalElements, setTotalElements] = useState(0);
-    const [loadedElements, setLoadedElements] = useState(0);
     const [lastUrl, setLastUrl] = useState(null);
+    const [dbSize, setDBSize] = useState(0)
 
-
-
-
-    const generateAndDownloadPDF = async () => {
-        const printBody = await printAllPagesOfResults();
+    //For The pdf I used pdfmake(https://www.npmjs.com/package/pdfmake), first I tried with jsPDF(https://www.npmjs.com/package/jspdf)
+    //But jsPDF does not support utf-8 so (for example Szőlő in database would print szQlQ)
+    const downloadAllResultsToPDF = async () => {
+        const printBody = await getPrintContentWithAllResults();
         const docDefinition = {
             content: [
                 {text: 'Találatok PDF-be convertálva', style: 'header'},
@@ -63,71 +62,22 @@ export default function DataListPage() {
                 }
             }
         };
-        console.log(printBody)
-        console.log(docDefinition.content)
         pdfMake.createPdf(docDefinition).download("results.pdf");
     };
 
-    const printAllPagesOfResults = async () => {
+    const getPrintContentWithAllResults = async () => {
         const response = await fetch(`${lastUrl}`);
         const dataPage = await response.json();
-        const tableContent = await dataPage.content
-        const array = tableContent.map((elem) => [{text : elem.id}, {text: elem.name}, {text: elem.price}, {text: elem.vat}]);
-        console.log([...arrayToPrint,array])
-        return [
-            [{text: 'Cikkszám', style: 'tableHeader'},
+        const tableContentFromDB = await dataPage.content
+        const tableHeaderRow = [
+            {text: 'Cikkszám', style: 'tableHeader'},
             {text: 'Cikk Megnevezése', style: 'tableHeader'},
             {text: 'Nettó Ár', style: 'tableHeader'},
             {text: 'Áfa', style: 'tableHeader'}]
-        ,...array];
+        const tableRows = tableContentFromDB.map((elem) => [{text: elem.id}, {text: elem.name}, {text: elem.price}, {text: elem.vat}]);
+
+        return [tableHeaderRow, ...tableRows];
     };
-
-
-    async function fetchDataList() {
-        const response = await fetch(`api/adat?page=${pageNumber}&size=${recordPerPage}`);
-        const dataArray = await response.json();
-        console.log(dataArray)
-        setDataList(dataArray.content);
-        setMaxPages(dataArray.totalPages);
-        setTotalElements(dataArray.totalElements);
-        setLoadedElements(dataArray.numberOfElements);
-        setLastUrl(`api/adat?page=0&size=${dataArray.totalElements}`)
-        return dataArray
-    }
-
-    async function fetchSortedDataList(columnName) {
-        const response = await fetch(`api/adat/sorted?page=${pageNumber}&size=${recordPerPage}&asc=${asc}&category=${columnName}`);
-        const dataArray = await response.json();
-        setDataList(dataArray.content);
-        setTotalElements(dataArray.totalElements);
-        setLoadedElements(dataArray.numberOfElements);
-        setLastUrl(`api/adat/sorted?page=0&size=${dataArray.totalElements}&asc=${asc}&category=${columnName}`)
-        console.log(dataArray)
-        return dataArray
-    }
-
-    async function fetchFilteredDataList() {
-        const response = await fetch(`api/adat/search?page=${pageNumber}&size=${recordPerPage}&namePart=${searchInput}`);
-        const dataArray = await response.json();
-        setDataList(dataArray.content);
-        setTotalElements(dataArray.totalElements);
-        setLoadedElements(dataArray.numberOfElements);
-        setLastUrl(`api/adat/search?page=0&size=${dataArray.totalElements}&namePart=${searchInput}`)
-        console.log(dataArray)
-        setMaxPages(dataArray.totalPages)
-        return dataArray
-    }
-
-    async function fetchFilteredSortedDataList(columnName) {
-        const response = await fetch(`api/adat/search-sorted?page=${pageNumber}&size=${recordPerPage}&asc=${asc}&category=${columnName}&namePart=${searchInput}`);
-        const dataArray = await response.json();
-        setTotalElements(dataArray.totalElements);
-        setLoadedElements(dataArray.numberOfElements);
-        setLastUrl(`api/adat/search-sorted?page=0&size=${dataArray.totalElements}&asc=${asc}&category=${columnName}&namePart=${searchInput}`)
-        console.log(dataArray)
-        setDataList(dataArray.content);
-        return dataArray
-    }
 
     function sortTable(columnName) {
         setAsc(!asc)
@@ -135,167 +85,150 @@ export default function DataListPage() {
         setLastCategory(columnName);
     }
 
-    function createPagination() {
-        let items = [];
-        for (let i = 0; i < maxPages; i++) {
-            items.push(
-                <Pagination.Item key={i + 1} active={i + 1 === pageNumber + 1}>
-                    {i + 1}
-                </Pagination.Item>,
-            );
-        }
-        setPaginationItems(items);
-    }
-
-    useEffect(() => {
-        if (!filtered) {
-            if (!sorted) {
-                fetchDataList();
-            } else {
-                fetchSortedDataList(lastCategory);
-            }
-        } else {
-            if (sorted) {
-                fetchFilteredSortedDataList(lastCategory)
-            } else {
-                fetchFilteredDataList()
-            }
-        }
-        createPagination()
-    }, [pageNumber, recordPerPage])
-
-    useEffect(() => {
-        if (!filtered) {
-            if (sorted) {
-                fetchSortedDataList(lastCategory);
-            }
-        } else {
-            if (sorted) {
-                fetchFilteredSortedDataList(lastCategory)
-            } else {
-                fetchFilteredDataList()
-            }
-        }
-    }, [asc, lastCategory]);
-
-    useEffect(() => {
-        createPagination()
-    }, [maxPages])
-
-    useEffect(() => {
-        setPageNumber(0)
-        if (searchInput.length < 1) {
-            setFiltered(false);
-        } else {
-            setFiltered(true);
-        }
+    function fetchFilteredLists() {
         if (sorted) {
-            fetchFilteredSortedDataList(lastCategory)
+            fetchFilteredSortedDataList(lastCategory, currentPageNumber, recordPerPage, asc, setDataList, setTotalElements, setLastUrl, searchInput, setNumberOfTotalPages)
         } else {
-            console.log("asd1")
-            fetchFilteredDataList()
+            fetchFilteredDataList(currentPageNumber, recordPerPage, searchInput, setDataList, setTotalElements, setLastUrl, setNumberOfTotalPages)
         }
-    }, [searchInput])
-
-    function handleSizeSelect(e) {
-        setPageNumber(0);
-        const selectedValue = e.target.value;
-        if (selectedValue === "all") {
-            setRecordPerPage(totalElements);
-        } else {
-            setRecordPerPage(parseInt(selectedValue));
-        }
-        setSorted(false);
     }
 
-    useEffect(() => {
+    function updateDatabase() {
+        if (!filtered) {
+            if (sorted) {
+                fetchSortedDataList(lastCategory, currentPageNumber, recordPerPage, asc, setDataList, setTotalElements, setLastUrl, setNumberOfTotalPages);
+            }
+        } else {
+            fetchFilteredLists();
+        }
+        //createPagination()
+    }
 
-    }, [dataList])
 
 
-    return (
-        <>
-            <Navbar>
-                {dataList?.length > 0 && <PageNavigation
-                    items={paginationItems}
-                    setPageNumber={setPageNumber}
-                />}
-                <Form>
-                    <Form.Select onChange={(e) => handleSizeSelect(e)}>
-                        <option selected={true} disabled={true}>Sorok Száma oldalanként</option>
-                        <option value="25">25</option>
-                        <option value="50">50</option>
-                        <option value="all">Összes Elem</option>
-                    </Form.Select>
-                </Form>
-                <Form style={{marginLeft: "10px"}}>
-                    <Form.Group className="mb-3" controlId="search-input">
-                        <FloatingLabel
-                            controlId="floating-search"
-                            label="Keresés"
-                            className="mb-3"
-                        >
-                            <Form.Control onChange={(e) => setSearchInput(e.target.value)} type="text"
-                                          placeholder="Keresés"/>
-                        </FloatingLabel>
-                    </Form.Group>
-                </Form>
-            </Navbar>
+function createPagination() {
+    let items = [];
+    for (let i = 0; i < numberOfTotalPages; i++) {
+        console.log(i + " index")
+        items.push(
+            <Pagination.Item key={i + 1} active={i + 1 === currentPageNumber + 1}>
+                {i + 1}
+            </Pagination.Item>,
+        );
+    }
 
-            {dataList?.length > 0 ? <div>
-                    <Table striped bordered hover variant="dark">
-                        <thead>
-                        <tr>
-                            <th onClick={() => {
-                                sortTable("id")
-                            }} id="id">Cikkszám
-                            </th>
-                            <th onClick={() => {
-                                sortTable("name")
-                            }} id="name">Cikk Megnevezése
-                            </th>
-                            <th id="price" onClick={() => {
-                                sortTable("price")
-                            }}>Nettó Ár
-                            </th>
-                            <th onClick={() => {
-                                sortTable("vat")
-                            }} id="vat">Áfa
-                            </th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {dataList?.map((record) => (
+    setPaginationItems(items);
+}
 
-                            <tr key={record.id}>
-                                <td>{record.id}</td>
+useEffect(() => {
+    fetchDataList(currentPageNumber, recordPerPage, setDataList, setNumberOfTotalPages, setTotalElements, setLastUrl, setDBSize);
+}, []);
 
-                                <td><Highlighter
-                                    highlightClassName="YourHighlightClass"
-                                    searchWords={[`${searchInput}`]}
-                                    caseSensitive={false}
-                                    autoEscape={true}
-                                    textToHighlight={`${record.name}`}
-                                /></td>
-                                <td>{record.price}</td>
-                                <td>{record.vat}</td>
+useEffect(() => {
+        updateDatabase();
+    },[currentPageNumber, recordPerPage,]);
 
-                            </tr>
+useEffect(() => {
+    updateDatabase();
+}, [asc, lastCategory]);
 
-                        ))}
-                        </tbody>
-                    </Table>
+
+useEffect(() => {
+    setCurrentPageNumber(0)
+    if (searchInput.length < 1) {
+        console.log(totalElements + " totalELements")
+        console.log(numberOfTotalPages + " numberOfTotalPages")
+        console.log(recordPerPage + " recordPerPage")
+        setFiltered(false);
+    } else {
+        setFiltered(true);
+    }
+    fetchFilteredLists();
+    //createPagination();
+}, [searchInput]);
+
+useEffect(() => {
+    createPagination();
+}, [numberOfTotalPages, currentPageNumber])
+
+function handleSizeSelect(e) {
+    setCurrentPageNumber(0);
+    const selectedValue = e.target.value;
+    if (selectedValue === "all") {
+        setRecordPerPage(dbSize);
+    } else {
+        setRecordPerPage(parseInt(selectedValue));
+    }
+    setSorted(false);
+}
+
+return (
+    <div style={{minHeight: "100vh", background: "#fab114"}}>
+        <Navbar style={{
+            margin: "0",
+            padding: "10px",
+            background: "#fab114",
+            display: 'flex',
+            justifyContent: 'space-between'
+        }}>
+            <div style={{float: "left"}}>
+                <SearchInputField
+                    setSearchInput={setSearchInput}
+                />
+            </div>
+            <Button style={{background: "#7a11fa", color: "#fab114", fontWeight: "bold"}}
+                    onClick={downloadAllResultsToPDF}>Találatok Letöltése</Button>
+            <div style={{float: "right"}}>
+                <PaginationSizeSelect
+                    handleSelect={handleSizeSelect}
+                    totalElements={totalElements}
+                    setCurrentPageNumber={setCurrentPageNumber}
+                    setRecordPerPage={setRecordPerPage}
+                    setSorted={setSorted}
+                />
+                {dataList?.length > 0 &&
                     <PageNavigation
                         items={paginationItems}
-                        setPageNumber={setPageNumber}
-                    /></div>
-                :
-                <>LOADING...</>
+                        setPageNumber={setCurrentPageNumber}
+                    />
+                }
+            </div>
+        </Navbar>
 
-            }
-            <Button onClick={generateAndDownloadPDF}>Download NEW PDF</Button>
-            <Button onClick={generateAndDownloadPDF}>Download PDF</Button>
-            <Link to={"/"}><Button>Log out</Button></Link>
-        </>
-    )
+        {dataList?.length > 0 ?
+            <div>
+                <DataBaseTable
+                    dataList={dataList}
+                    sortTable={sortTable}
+                    searchInput={searchInput}
+                />
+            </div>
+            :
+            <div>
+                <Card style={{maxWidth: "fit-content", padding: "5px", margin: "auto"}}>
+                    <p style={{fontSize: "x-large", fontWeight: "bold"}}>
+                        No Record Found
+                    </p>
+                </Card>
+            </div>
+        }
+
+        <Navbar style={{padding: "12px", paddingTop: "0", display: 'flex', justifyContent: 'space-between'}}>
+            <Link to={"/"}>
+                <Button style={{
+                    background: "#7a11fa",
+                    color: "#fab114",
+                    fontWeight: "bold",
+                    float: "left"
+                }}>Kijelentkezés</Button>
+            </Link>
+            <div style={{maxWidth: "fit-content", marginTop: "10px", float: "right"}}>
+                <PageNavigation
+                    items={paginationItems}
+                    setPageNumber={setCurrentPageNumber}
+                />
+            </div>
+        </Navbar>
+    </div>
+)
 }

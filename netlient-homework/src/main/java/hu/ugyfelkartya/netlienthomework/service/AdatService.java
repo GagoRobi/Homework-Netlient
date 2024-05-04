@@ -1,6 +1,6 @@
 package hu.ugyfelkartya.netlienthomework.service;
 
-import hu.ugyfelkartya.netlienthomework.model.Adat;
+import hu.ugyfelkartya.netlienthomework.model.entity.Adat;
 import hu.ugyfelkartya.netlienthomework.repository.AdatRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

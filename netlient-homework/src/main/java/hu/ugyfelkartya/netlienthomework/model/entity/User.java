@@ -1,4 +1,4 @@
-package hu.ugyfelkartya.netlienthomework.model;
+package hu.ugyfelkartya.netlienthomework.model.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

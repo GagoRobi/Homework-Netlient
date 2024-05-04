@@ -1,4 +1,4 @@
-package hu.ugyfelkartya.netlienthomework.model;
+package hu.ugyfelkartya.netlienthomework.model.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Adat {
-    //cikkszám, cikk megnevezés, nettó ár, áfa
+
     @Id
     @GeneratedValue
     private Long id; //cikkszám

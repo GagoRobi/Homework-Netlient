@@ -1,6 +1,6 @@
 package hu.ugyfelkartya.netlienthomework.controller;
 
-import hu.ugyfelkartya.netlienthomework.model.Adat;
+import hu.ugyfelkartya.netlienthomework.model.entity.Adat;
 import hu.ugyfelkartya.netlienthomework.service.AdatService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
