@@ -97,11 +97,13 @@ export default function DataListPage() {
         if (!filtered) {
             if (sorted) {
                 fetchSortedDataList(lastCategory, currentPageNumber, recordPerPage, asc, setDataList, setTotalElements, setLastUrl, setNumberOfTotalPages);
+            }else{
+                fetchDataList(currentPageNumber, recordPerPage, setDataList, setNumberOfTotalPages, setTotalElements, setLastUrl, setDBSize);
             }
         } else {
             fetchFilteredLists();
         }
-        //createPagination()
+        createPagination()
     }
 
 
