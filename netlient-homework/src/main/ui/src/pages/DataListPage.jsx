@@ -110,7 +110,6 @@ export default function DataListPage() {
 function createPagination() {
     let items = [];
     for (let i = 0; i < numberOfTotalPages; i++) {
-        console.log(i + " index")
         items.push(
             <Pagination.Item key={i + 1} active={i + 1 === currentPageNumber + 1}>
                 {i + 1}
@@ -137,9 +136,6 @@ useEffect(() => {
 useEffect(() => {
     setCurrentPageNumber(0)
     if (searchInput.length < 1) {
-        console.log(totalElements + " totalELements")
-        console.log(numberOfTotalPages + " numberOfTotalPages")
-        console.log(recordPerPage + " recordPerPage")
         setFiltered(false);
     } else {
         setFiltered(true);

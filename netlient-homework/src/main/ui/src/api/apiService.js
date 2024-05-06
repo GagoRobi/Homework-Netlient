@@ -29,9 +29,6 @@ export async function fetchFilteredDataList(pageNumber, recordPerPage, searchInp
     setTotalElements(dataArray.totalElements);
     setLastUrl(`api/adat/search?page=0&size=${dataArray.totalElements}&namePart=${searchInput}`)
     setNumberOfTotalPages(dataArray.totalPages)
-    console.log(recordPerPage + "rperpage")
-    console.log(dataArray.totalPages + "totalpages")
-    console.log(dataArray)
     return dataArray
 }
 
