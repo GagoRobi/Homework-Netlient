@@ -8,13 +8,12 @@ import {
     fetchSortedDataList
 } from '../api/apiService';
 import PageNavigation from "../components/PageNavigation.jsx";
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
+import pdfFonts from "../../vfs_fontes.ts";
+import  pdfMake from "pdfmake/build/pdfmake";
 import PaginationSizeSelect from "../components/PaginationSizeSelect.jsx";
 import SearchInputField from "../components/SearchInputField.jsx";
 import DataBaseTable from "../components/DataBaseTable.jsx";
-
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+pdfMake.vfs = pdfFonts;
 
 
 export default function DataListPage() {
